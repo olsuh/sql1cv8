@@ -1,0 +1,1 @@
+select convert(varchar, max(modify_date), 120) Version from sys.tables
