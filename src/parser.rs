@@ -200,9 +200,7 @@ fn parse_with_brackets(m: &Metadata, src: &str) -> Result<String, Box<dyn Error>
 
     let re = Regex::new(r"▶[^▶]+").unwrap();
     res = re
-        .replace_all(&res, |s: &regex::Captures| {
-            parse_with_aliases(m, s.as_str())
-        })
+        .replace_all(&res, |s: &regex::Captures| parse_with_aliases(m, &s[1]))
         .to_string();
     res = unmark_statements(&res);
 
@@ -299,7 +297,9 @@ fn restore_strings_and_comments(src: &str, buf: &[String]) -> String {
 fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
     let mut open = 0;
     let mut res = String::new();
-    let mut src = src.to_string();
+    let mut src = src;
+    let mut clr = "";
+    let mut sub = "";
 
     loop {
         if open == 0 {
@@ -307,39 +307,39 @@ fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
             let i2 = src.find("--");
             let i3 = src.find("'");
             let i4 = src.find("\"");
-            let i = min(i1, i2, i3, i4);
+            let i = min(&[i1, i2, i3, i4], src.len());
             if i == src.len() {
                 res += &src;
                 break;
             }
-            let (com, clr) = match i {
-                i if i == i1.unwrap() => ("/*", "*/"),
-                i if i == i2.unwrap() => ("--", "\n"),
-                i if i == i3.unwrap() => ("'", "'"),
-                i if i == i4.unwrap() => ("\"", "\""),
+            let com;
+            (com, sub, clr) = match i {
+                i if i == i1.unwrap() => ("/*", "/*", "*/"),
+                i if i == i2.unwrap() => ("--", "", "\n"),
+                i if i == i3.unwrap() => ("'", "", "'"),
+                i if i == i4.unwrap() => ("\"", "", "\""),
                 _ => unreachable!(),
             };
             res += &src[..i];
-            src = src[i + com.len()..].to_string();
+            src = &src[i + com.len()..];
             open += 1;
         } else {
-            let i = src.find(com).unwrap() + com.len();
-            let j = src.find(clr).unwrap() + clr.len();
-            let k = min(i, j, Some(src.len()), None);
+            let i = find_and_len(src, sub);
+            let j = find_and_len(src, clr);
+            let k = min(&[i, j, Some(src.len())], src.len());
             if k == src.len() {
-                buf.push(src.clone());
+                buf.push(src.to_string());
                 res += &format!("«{}»", buf.len() - 1);
                 break;
             }
-            buf.push(src[..k].to_string());
-            res += &format!("«{}»", buf.len() - 1);
-            src = src[k..].to_string();
+            let com = &src[..k];
+            src = &src[k..];
             if i < j {
                 open += 1;
             } else {
                 open -= 1;
                 if open == 0 {
-                    buf.push(src[..k].to_string());
+                    buf.push(com.to_string());
                     res += &format!("«{}»", buf.len() - 1);
                 }
             }
@@ -348,16 +348,19 @@ fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
     res
 }
 
-fn index(s: &str, substr: &str) -> usize {
+/*fn index(s: &str, substr: &str) -> usize {
     if substr.is_empty() {
         return s.len();
     }
     s.find(substr).unwrap_or(s.len())
+}*/
+fn find_and_len(src: &str, sub_str: &str) -> Option<usize> {
+    src.find(sub_str).and_then(|x| Some(x + sub_str.len()))
 }
 
-fn min(i: Option<usize>, j: Option<usize>, k: Option<usize>, l: Option<usize>) -> usize {
-    let mut r = usize::MAX;
-    for &v in &[i, j, k, l] {
+fn min(i: &[Option<usize>], start: usize) -> usize {
+    let mut r = start;
+    for &v in i {
         if let Some(v) = v {
             if r > v {
                 r = v;

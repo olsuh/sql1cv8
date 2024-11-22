@@ -1,9 +1,5 @@
-use std::cell::RefCell;
-//use core::slice::SlicePattern;
+use crate::HashMap;
 use crate::Result;
-use std::collections::HashMap;
-
-use ntex::util::BytesMut;
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -34,7 +30,7 @@ pub struct PgConnection {
     db_data: Statement,
     cv_names: Statement,
     db_names: Statement,
-    buf: RefCell<BytesMut>,
+    //buf: RefCell<BytesMut>,
 }
 
 impl PgConnection {
@@ -58,7 +54,7 @@ impl PgConnection {
             db_data,
             cv_names,
             db_names,
-            buf: RefCell::new(BytesMut::with_capacity(10 * 1024 * 1024)),
+            //buf: RefCell::new(BytesMut::with_capacity(10 * 1024 * 1024)),
         }
     }
 }
@@ -89,7 +85,7 @@ impl PgConnection {
             String,
         )>,
     > {
-        let rows = self.cl.query_raw(&self.db_data, &[]).await?;
+        let rows = self.cl.query_raw(&self.db_data, &[]).await.unwrap();
         let rows = Vec::from_iter(rows.iter().map(|row| {
             Ok((
                 row.get::<_, String>(0),
@@ -106,7 +102,20 @@ impl PgConnection {
                 row.get::<_, String>(11),
             ))
         }));
-
         rows
+    }
+
+    pub async fn db_names(&self) -> Result<Vec<u8>> {
+        let rows = self.cl.query_raw(&self.db_names, &[]).await?;
+
+        let db_names: &[u8] = rows.first().unwrap().get(0);
+        Ok(db_names.into())
+    }
+
+    pub async fn cv_names(&self) -> Result<Vec<u8>> {
+        let rows = self.cl.query_raw(&self.cv_names, &[]).await?;
+
+        let cv_names: &[u8] = rows.first().unwrap().get(0);
+        Ok(cv_names.into())
     }
 }

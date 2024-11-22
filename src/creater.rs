@@ -1,13 +1,8 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::ops::Deref;
-use std::sync::Arc;
-use tokio_postgres::types::ToSql;
-use tokio_postgres::{connect, Client, Statement};
 
-use crate::init_objects::{self, InitedObjects};
-use crate::queries::{self, PgConnection};
+use crate::init_objects::InitedObjects;
+use crate::queries::PgConnection;
 use crate::{metadata::Object, Metadata, Result};
 
 pub(crate) struct AppCreater {
@@ -46,10 +41,10 @@ impl AppCreater {
         Ok(m)
     }
 
-    // LoadFromFile returns metadata from a file.
-    // It takes a string parameter:
-    // s - name of the file where the metadata cache is stored in JSON format.
-    // Returns a Metadata object.
+    // LoadFromFile возвращает метаданные из файла.
+    // В качестве параметров принимает строковую переменную:
+    // s - имя файла, в котором хранится кэш метаданных в формате json.
+    // Возвращает объект Metadata.
     pub fn load_from_file(&self) -> Result<Metadata> {
         let mut file = File::open(&self.file)?;
         let mut contents = String::new();
@@ -58,18 +53,8 @@ impl AppCreater {
         Ok(m)
     }
 
-    // LoadFromFile возвращает метаданные из файла.
-    // В качестве параметров принимает строковую переменную:
-    // s - имя файла, в котором хранится кэш метаданных в формате json.
-    // Возвращает объект Metadata.
     pub async fn load_from_db(&self) -> Result<Metadata> {
-        let metadata = Metadata {
-            language: "ru".to_string(),
-            objects: HashMap::with_capacity(65536),
-            version: self.conn.db_version().await?,
-        };
-
-        let mut obj_main = InitedObjects::init_objects(metadata)?;
+        let mut obj_main = InitedObjects::init_objects(&self.conn).await?;
         obj_main.types_insert();
 
         let rows = self.conn.db_data().await;

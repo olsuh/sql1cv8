@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::HashMap;
 
 lazy_static::lazy_static! {
 

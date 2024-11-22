@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::HashMap;
 //use std::hash::Hash;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -19,13 +19,13 @@ pub(crate) struct Object {
 
 impl Object {
     // Возвращает ВидСсылки типа INT.
-    fn rt_ref_int(&self) -> Result<String, std::num::ParseIntError> {
+    pub fn _rt_ref_int(&self) -> Result<String, std::num::ParseIntError> {
         self.number.parse::<u32>()?;
         Ok(self.number.clone())
     }
 
     // Возвращает ВидСсылки типа BINARY(4).
-    fn rt_ref_bin(&self) -> Result<String, std::num::ParseIntError> {
+    pub fn rt_ref_bin(&self) -> Result<String, std::num::ParseIntError> {
         let u = self.number.parse::<u32>()?;
         Ok(format!("0x{:08X}", u))
     }

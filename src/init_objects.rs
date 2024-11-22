@@ -1,13 +1,7 @@
 // Импорт необходимых библиотек
-use std::collections::HashMap;
+use crate::{processing, queries::PgConnection, HashMap};
 use std::ops::Deref;
-use std::sync::Arc;
-use std::{clone, io::Read};
-//use flate2::read::DeflateDecoder;
-use tokio_postgres::types::ToSql;
-use tokio_postgres::{connect, Client, Statement};
 
-use crate::processing::Enum;
 use crate::{
     metadata::Object,
     processing::{CVNames, DBNames, Enums, Points},
@@ -20,7 +14,7 @@ pub(crate) struct InitedObjects {
     fields: Box<HashMap<&'static str, &'static str>>,
     types: Box<HashMap<&'static str, &'static str>>,
     dbnames: DBNames,
-    cvnames: CVNames,
+    pub(crate) cvnames: CVNames,
     enums: HashMap<String, Enums>,
     points: HashMap<String, Points>,
 }
@@ -143,6 +137,7 @@ impl InitedObjects {
     fn params_insert(&self, params: &mut HashMap<String, Object>, param: &str) {
         params.insert(self.fields[param].to_string(), self.param_object(param));
     }
+
     pub fn types_insert(&mut self) {
         for (value, name) in self.types.deref() {
             self.metadata.objects.insert(
@@ -157,31 +152,73 @@ impl InitedObjects {
         }
     }
 
-    pub fn init_objects(metadata: Metadata) -> Result<InitedObjects> {
-        let mut obj = InitedObjects {
+    pub(crate) fn rtref_insert(&mut self, table_object: &Object) {
+        let rt_ref_bin = match table_object.rt_ref_bin() {
+            Ok(s) => s,
+            Err(_e) => return,
+        };
+
+        let name = format!("{}.{}", table_object.cv_name, self.fields["_IDTRef"]);
+
+        self.metadata.objects.insert(
+            name.clone(),
+            Object {
+                r#type: "TRef".to_string(),
+                db_name: rt_ref_bin,
+                cv_name: name,
+                synonyms: field_synonyms("_IDTRef"),
+                ..Default::default()
+            },
+        );
+    }
+
+    pub async fn init_objects(conn: &PgConnection) -> Result<InitedObjects> {
+        let metadata = Metadata {
+            language: "ru".to_string(),
+            objects: HashMap::with_capacity(65536),
+            version: conn.db_version().await?,
+        };
+
+        let bin = conn.db_names().await?;
+        let dbnames = processing::processing_db_names(bin.as_slice());
+
+        let bin = conn.cv_names().await?;
+        let cvnames = processing::processing_cv_names(bin.as_slice());
+
+        let mut enums = HashMap::with_capacity(dbnames.cnt_enums);
+        let stmt = conn.cl.prepare(&dbnames.qry_enums).await.unwrap();
+        let rows = conn.cl.query(&stmt, &[]).await.unwrap();
+        for row in rows {
+            let k = row.get::<_, String>(0);
+            let v = row.get::<_, &[u8]>(1);
+            let v = processing::processing_enums(v);
+            enums.insert(k, v);
+        }
+
+        let mut points = HashMap::with_capacity(dbnames.cnt_points);
+        let stmt = conn.cl.prepare(&dbnames.qry_points).await.unwrap();
+        let rows = conn.cl.query(&stmt, &[]).await.unwrap();
+        for row in rows {
+            let k = row.get::<_, String>(0);
+            let v = row.get::<_, &[u8]>(1);
+            let v = processing::processing_points(v);
+            points.insert(k, v);
+        }
+
+        let obj = InitedObjects {
             types: types(&metadata.language),
             fields: fields(&metadata.language),
             metadata,
-            dbnames: DBNames::default(),
-            cvnames: CVNames::default(),
-            enums: HashMap::new(),
-            points: HashMap::new(),
+            dbnames,
+            cvnames,
+            enums,
+            points,
         };
-
-        // Реализация запросов к базе данных и обработка результатов
-        // Используйте p для выполнения SQL-запросов
 
         Ok(obj)
     }
-
-    pub(crate) fn rtref_insert(&self, table_object: &Object) {
-        todo!()
-    }
-
-    // Другие методы (points_insert, rtref_insert, types_insert) можно реализовать аналогично
 }
 
-// Вспомогательные функции и структуры
 fn field_synonyms(field: &str) -> HashMap<String, String> {
     let x = crate::consts::FIELD_SYNONYMS.get(field).unwrap();
     let z = x.iter().map(|(k, v)| (k.to_string(), v.to_string()));
@@ -201,9 +238,3 @@ fn fields(language: &str) -> Box<HashMap<&'static str, &'static str>> {
     let y = x.to_owned();
     Box::new(y)
 }
-
-// Другие необходимые структуры и реализации
-
-// Комментарий: Этот код представляет собой частичный перевод исходного кода с Go на Rust.
-// Некоторые детали реализации опущены из-за отсутствия полного контекста.
-// Для полной функциональности потребуется дополнительная работа и уточнение деталей.

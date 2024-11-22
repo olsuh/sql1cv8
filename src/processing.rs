@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::HashMap;
 
 #[derive(Default)]
 pub(crate) struct CVNames {
@@ -6,18 +6,18 @@ pub(crate) struct CVNames {
 }
 
 #[derive(Default)]
-struct CVName {
+pub(crate) struct CVName {
     pub(crate) val: String,
     pub(crate) syn: HashMap<String, String>,
 }
 
-fn processing_cv_names(bin: &[u8]) -> CVNames {
+pub(crate) fn processing_cv_names(bin: &[u8]) -> CVNames {
     let mut c = CVNames {
         m: HashMap::with_capacity(65536),
     };
 
-    let mut i = String::new();
-    let mut l = String::new();
+    let mut name = String::new();
+    let mut syn_name = String::new();
     let mut pd = processing(bin);
 
     while pd.next() {
@@ -31,10 +31,10 @@ fn processing_cv_names(bin: &[u8]) -> CVNames {
         let (level, posit, value) = pd.get();
         match level {
             2 => match posit % 7 {
-                1 => i = value,
+                1 => name = value,
                 4 => {
                     c.m.insert(
-                        i.clone(),
+                        name.clone(),
                         CVName {
                             val: value,
                             syn: HashMap::new(),
@@ -44,10 +44,10 @@ fn processing_cv_names(bin: &[u8]) -> CVNames {
                 _ => {}
             },
             4 => match posit {
-                0 => l = value,
+                0 => syn_name = value,
                 1 => {
-                    if let Some(cv_name) = c.m.get_mut(&i) {
-                        cv_name.syn.insert(l.clone(), value);
+                    if let Some(cv_name) = c.m.get_mut(&name) {
+                        cv_name.syn.insert(syn_name.clone(), value);
                     }
                 }
                 _ => {}
@@ -67,12 +67,11 @@ pub(crate) struct Enum {
     pub(crate) syn: HashMap<String, String>,
 }
 
-fn processing_enums(bin: &[u8]) -> Enums {
+pub fn processing_enums(bin: &[u8]) -> Enums {
     let mut es = Vec::with_capacity(16);
     let mut i = 0;
     let mut l = String::new();
     let mut y = false;
-    let mut e: Option<Enum> = None;
     let mut pd = processing(bin);
 
     while pd.next() {
@@ -88,12 +87,12 @@ fn processing_enums(bin: &[u8]) -> Enums {
             5 => {
                 y = false;
                 if posit == 2 {
-                    e = Some(Enum {
+                    let e = Enum {
                         num: i.to_string(),
                         val: value,
                         syn: HashMap::with_capacity(1),
-                    });
-                    es.push(e.unwrap());
+                    };
+                    es.push(e);
                     i += 1;
                     y = true;
                 }
@@ -122,10 +121,10 @@ fn processing_enums(bin: &[u8]) -> Enums {
 #[derive(Debug, Default)]
 pub(crate) struct DBNames {
     pub(crate) m: HashMap<String, DBName>,
-    cnt_enums: i32,
-    qry_enums: String,
-    cnt_points: i32,
-    qry_points: String,
+    pub(crate) cnt_enums: usize,
+    pub(crate) qry_enums: String,
+    pub(crate) cnt_points: usize,
+    pub(crate) qry_points: String,
 }
 
 #[derive(Debug, Default)]
@@ -135,18 +134,15 @@ pub(crate) struct DBName {
     pub(crate) num: String,
 }
 
-fn processing_db_names(bin: &[u8]) -> DBNames {
+pub(crate) fn processing_db_names(bin: &[u8]) -> DBNames {
     let mut d = DBNames {
         m: HashMap::with_capacity(65536),
-        cnt_enums: 0,
-        qry_enums: String::new(),
-        cnt_points: 0,
-        qry_points: String::new(),
+        ..DBNames::default()
     };
 
-    let mut i = String::new();
-    let mut t = String::new();
-    let mut n = String::new();
+    let mut ids = String::new();
+    let mut typ = String::new();
+    //let mut num = String::new();
     let mut ce = 0;
     let mut cp = 0;
     let mut qe = String::new();
@@ -158,27 +154,27 @@ fn processing_db_names(bin: &[u8]) -> DBNames {
         let (level, posit, value) = pd.get();
         if level == 3 {
             match posit {
-                0 => i = value,
-                1 => t = value,
+                0 => ids = value,
+                1 => typ = value,
                 2 => {
-                    n = value;
+                    let num = value;
                     d.m.insert(
-                        t.clone() + &n,
+                        typ.clone() + &num,
                         DBName {
-                            ids: i.clone(),
-                            typ: t.clone(),
-                            num: n.clone(),
+                            ids: ids.clone(),
+                            typ: typ.clone(),
+                            num: num.clone(),
                         },
                     );
 
-                    match t.as_str() {
+                    match typ.as_str() {
                         "Enum" => {
                             ce += 1;
-                            qe.push_str(&format!(",'{}'", i));
+                            qe.push_str(&format!(",'{}'", ids));
                         }
                         "BPrPoints" => {
                             cp += 1;
-                            qp.push_str(&format!(",'{}.7'", i));
+                            qp.push_str(&format!(",'{}.7'", ids));
                         }
                         _ => {}
                     }
@@ -293,12 +289,11 @@ pub(crate) type Point = Enum;
     pub(crate) syn: HashMap<String, String>,
 }*/
 
-fn processing_points(bin: &[u8]) -> Points {
+pub fn processing_points(bin: &[u8]) -> Points {
     let mut ps = Vec::with_capacity(16);
     let mut n = String::new();
     let mut l = String::new();
     let mut y = false;
-    let mut p: Option<Point> = None;
     let mut s: HashMap<String, String> = HashMap::new();
     let mut pd = processing(bin);
 
@@ -330,12 +325,12 @@ fn processing_points(bin: &[u8]) -> Points {
                 }
                 3 => n = value,
                 4 => {
-                    p = Some(Point {
+                    let p = Point {
                         num: value,
                         val: n.clone(),
                         syn: s.clone(),
-                    });
-                    ps.push(p.unwrap());
+                    };
+                    ps.push(p);
                 }
                 _ => {}
             },

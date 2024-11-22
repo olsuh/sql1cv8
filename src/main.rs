@@ -1,6 +1,6 @@
 use std::error::Error;
 pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
-pub(crate) type HashMap<K, V, S> = std::collections::HashMap<K, V, S>;
+pub(crate) type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 mod consts;
 mod creater;
