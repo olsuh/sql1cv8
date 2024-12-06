@@ -16,8 +16,8 @@ const CONNECTION_STRING: &str =
 //"postgres://postgres:<psw>@127.0.0.1/ut";
 const METADATA_FILE_NAME: &str = "metadata.json";
 
-static SRC_QUERY: &str = r#"
-SELECT items.[$Ссылка] AS item_id
+static SRC_QUERY: &str = r#"  -- /*comment/**/ [$Справочник.Номенклатура]
+  /* /*[$Справочник.Номенклатура]*/ /*[$Справочник.Номенклатура]*/   */SELECT items.[$Ссылка] AS item_id
       ,items.[$Код] AS item_code
       ,items.[$Наименование] AS item_descr
 FROM [$Справочник.Номенклатура] AS items

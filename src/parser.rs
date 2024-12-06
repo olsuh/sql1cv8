@@ -312,44 +312,46 @@ fn restore_strings_and_comments(src: &str, buf: &[String]) -> String {
 fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
     let mut open = 0;
     let mut res = String::new();
-    let mut src = src;
-    let mut clr = "";
+    let mut end = "";
     let mut sub = "";
+    let mut com_len = 0;
+    let mut point = 0;
+    let mut search;
 
     loop {
+        search = &src[point..];
         if open == 0 {
-            let i1 = src.find("/*");
-            let i2 = src.find("--");
-            let i3 = src.find("'");
-            let i4 = src.find("\"");
-            let i = min(&[i1, i2, i3, i4], src.len());
-            if i == src.len() {
-                res += &src;
+            let i1 = search.find("/*");
+            let i2 = search.find("--");
+            let i3 = search.find("'");
+            let i4 = search.find("\"");
+            let point_i = min(&[i1, i2, i3, i4], search.len());
+            res += &search[..point_i];
+            if point_i == search.len() {
                 break;
             }
-            let com;
-            (com, sub, clr) = match i {
-                i if matches!(i1, Some(ii) if i == ii) => ("/*", "/*", "*/"),
-                i if matches!(i2, Some(ii) if i == ii) => ("--", "", "\n"),
-                i if matches!(i3, Some(ii) if i == ii) => ("'", "", "'"),
-                i if matches!(i4, Some(ii) if i == ii) => ("\"", "", "\""),
+
+            (com_len, sub, end) = match Some(point_i) {
+                i if i == i1 => ("/*".len(), "/*", "*/"),
+                i if i == i2 => ("--".len(), "", "\n"),
+                i if i == i3 => ("'".len(), "", "'"),
+                i if i == i4 => ("\"".len(), "", "\""),
                 _ => unreachable!(),
             };
-            res += &src[..i];
-            src = &src[i + com.len()..];
+            point += point_i + com_len;
             open += 1;
         } else {
-            let i = find_after(src, sub);
-            let j = find_after(src, clr);
-            let k = min(&[i, j], src.len());
-            if k == src.len() {
+            let i_sub = find_after(search, sub);
+            let i_end = find_after(search, end);
+            let point_i = min(&[i_sub, i_end], search.len());
+            let com = &src[point - com_len..point + point_i];
+            if point_i == search.len() {
                 res += &format!("«{}»", buf.len());
-                buf.push(src.to_string());
+                buf.push(com.to_string());
                 break;
             }
-            let com = &src[..k];
-            src = &src[k..];
-            if matches!((i,j), (Some(ii),Some(jj)) if ii < jj) {
+            let is_open = matches!((i_sub,i_end), (Some(i_s), Some(i_e)) if i_s < i_e);
+            if is_open {
                 open += 1;
             } else {
                 open -= 1;
@@ -358,6 +360,8 @@ fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
                     buf.push(com.to_string());
                 }
             }
+            com_len += point_i;
+            point += point_i;
         }
     }
     res
