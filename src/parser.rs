@@ -189,7 +189,7 @@ fn parse_with_brackets(m: &Metadata, src: &str) -> Result<String, Box<dyn Error>
             if open == 0 {
                 inc += &src[..j];
                 let s = parse_with_brackets(m, &inc)?;
-                res += &format!("{}{})", s, ")");
+                res += &(s + ")");
                 src = src[j + 1..].to_string();
             } else {
                 inc += &src[..=j];
@@ -199,17 +199,15 @@ fn parse_with_brackets(m: &Metadata, src: &str) -> Result<String, Box<dyn Error>
     }
 
     let re = Regex::new(r"▶[^▶]+").unwrap();
-    res = re
-        .replace_all(&res, |s: &regex::Captures| parse_with_aliases(m, &s[1]))
-        .to_string();
-    res = unmark_statements(&res);
+    let res = re.replace_all(&res, |s: &regex::Captures| parse_with_aliases(m, &s[0]));
+    let res = unmark_statements(&res);
 
     Ok(res)
 }
 
 fn mark_statements(src: &str) -> String {
     let mut src = format!("▶{}", src);
-    let re = Regex::new(r"(?si)\b((?:select|bulk|insert|update|delete|merge)\s)").unwrap();
+    let re = Regex::new(r#"(?si)\b((?:select|bulk|insert|update|delete|merge)\s)"#).unwrap();
     src = re.replace_all(&src, r"▶$1").to_string();
     src
 }
@@ -236,6 +234,23 @@ fn parse_full_constructions(m: &Metadata, src: &str) -> String {
     .to_string()
 }
 
+trait MyIndex<I> {
+    //type Output = str;
+
+    fn index<'a>(&'a self, i: I) -> &'a str;
+}
+
+use regex::Captures;
+impl<'h> MyIndex<usize> for Captures<'h> {
+    //type Output = str;
+
+    // The lifetime is written out to make it clear that the &str returned
+    // does NOT have a lifetime equivalent to 'h.
+    fn index<'a>(&'a self, i: usize) -> &'a str {
+        self.get(i).map(|m| m.as_str()).unwrap_or_else(|| "")
+    }
+}
+
 fn parse_with_aliases(m: &Metadata, src: &str) -> String {
     let mut res = src.to_string();
     let mut aliases = HashMap::new();
@@ -243,7 +258,7 @@ fn parse_with_aliases(m: &Metadata, src: &str) -> String {
     let re = Regex::new(r"(?si)(?:\.\.|\[dbo\]\.|\bdbo\.|[^\.])\[\$(\$?[\pL\w\.]+)\](?:\s+as\s+|\s+)(?:\[(.+?)\]|(\w+))").unwrap();
     for v in re.captures_iter(&res) {
         let tabname = &v[1];
-        let aliasname = format!("{}{}", &v[2], &v[3]);
+        let aliasname = format!("{}{}", v.index(2), &v[3]);
         aliases.insert(aliasname, tabname.to_string());
     }
 
@@ -264,7 +279,7 @@ fn parse_with_aliases(m: &Metadata, src: &str) -> String {
     res = re
         .replace_all(&res, |s: &regex::Captures| {
             let prefix = &s[1];
-            let aliasname = format!("{}{}", &s[2], &s[3]);
+            let aliasname = format!("{}{}", s.index(2), &s[3]);
             let colname = &s[4];
             if let Some(tabname) = aliases.get(&aliasname) {
                 if let Some(table_object) = m.objects.get(tabname) {
@@ -314,33 +329,33 @@ fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
             }
             let com;
             (com, sub, clr) = match i {
-                i if i == i1.unwrap() => ("/*", "/*", "*/"),
-                i if i == i2.unwrap() => ("--", "", "\n"),
-                i if i == i3.unwrap() => ("'", "", "'"),
-                i if i == i4.unwrap() => ("\"", "", "\""),
+                i if matches!(i1, Some(ii) if i == ii) => ("/*", "/*", "*/"),
+                i if matches!(i2, Some(ii) if i == ii) => ("--", "", "\n"),
+                i if matches!(i3, Some(ii) if i == ii) => ("'", "", "'"),
+                i if matches!(i4, Some(ii) if i == ii) => ("\"", "", "\""),
                 _ => unreachable!(),
             };
             res += &src[..i];
             src = &src[i + com.len()..];
             open += 1;
         } else {
-            let i = find_and_len(src, sub);
-            let j = find_and_len(src, clr);
-            let k = min(&[i, j, Some(src.len())], src.len());
+            let i = find_after(src, sub);
+            let j = find_after(src, clr);
+            let k = min(&[i, j], src.len());
             if k == src.len() {
+                res += &format!("«{}»", buf.len());
                 buf.push(src.to_string());
-                res += &format!("«{}»", buf.len() - 1);
                 break;
             }
             let com = &src[..k];
             src = &src[k..];
-            if i < j {
+            if matches!((i,j), (Some(ii),Some(jj)) if ii < jj) {
                 open += 1;
             } else {
                 open -= 1;
                 if open == 0 {
+                    res += &format!("«{}»", buf.len());
                     buf.push(com.to_string());
-                    res += &format!("«{}»", buf.len() - 1);
                 }
             }
         }
@@ -348,24 +363,22 @@ fn remove_strings_and_comments(src: &str, buf: &mut Vec<String>) -> String {
     res
 }
 
-/*fn index(s: &str, substr: &str) -> usize {
-    if substr.is_empty() {
-        return s.len();
+fn find_after(src: &str, sub_str: &str) -> Option<usize> {
+    if sub_str.is_empty() {
+        None
+    } else {
+        src.find(sub_str).and_then(|pos| Some(pos + sub_str.len()))
     }
-    s.find(substr).unwrap_or(s.len())
-}*/
-fn find_and_len(src: &str, sub_str: &str) -> Option<usize> {
-    src.find(sub_str).and_then(|x| Some(x + sub_str.len()))
 }
 
-fn min(i: &[Option<usize>], start: usize) -> usize {
-    let mut r = start;
-    for &v in i {
-        if let Some(v) = v {
-            if r > v {
-                r = v;
+fn min(arr: &[Option<usize>], max: usize) -> usize {
+    let mut min = max;
+    for &i in arr {
+        if let Some(i) = i {
+            if min > i {
+                min = i;
             }
         }
     }
-    r
+    min
 }

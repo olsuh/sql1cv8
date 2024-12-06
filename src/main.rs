@@ -12,7 +12,8 @@ mod queries;
 pub(crate) use metadata::Metadata;
 
 const CONNECTION_STRING: &str =
-    "postgres://benchmarkdbuser:benchmarkdbpass@tfb-database/hello_world";
+    "jdbc:sqlserver://localhost:1434;databaseName=ut;user=sa;password=<psw>;";
+//"postgres://postgres:<psw>@127.0.0.1/ut";
 const METADATA_FILE_NAME: &str = "metadata.json";
 
 static SRC_QUERY: &str = r#"
@@ -25,7 +26,7 @@ WHERE items.[$ПометкаУдаления] = 0
 
 #[ntex::main]
 async fn main() -> Result<()> {
-    let creater = creater::AppCreater::create(CONNECTION_STRING, METADATA_FILE_NAME).await;
+    let mut creater = creater::AppCreater::create(CONNECTION_STRING, METADATA_FILE_NAME).await;
     let m = creater.load_newer().await?;
     println!("Версия метаданных: {}", m.version);
 

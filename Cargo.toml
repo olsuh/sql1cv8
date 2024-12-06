@@ -9,18 +9,31 @@ lazy_static = "1.5"
 hashbrown = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sqlx = "0.8"
-regex = "1"
+#sqlx = { version = "0.6", optional = true }
+regex = { version = "1", features = ["logging"] }
+flate2 = "1"
 
 #may_postgres = { git = "https://github.com/Xudong-Huang/may_postgres.git" } #, rev = "917ed78", default-features = false }
 tokio-postgres = { git="https://github.com/fafhrd91/postgres.git", branch="ntex-2" }
 ntex = "2.4"
 #ntex-compio = "0.1.2"
-tok_io = {version = "1", package = "tokio" }
+#tok_io = {version = "1", package = "tokio" }
+anyhow = "1"
+
+tokio = "1"
+[dependencies.tokio-util]
+version = "0.7"
+features = ["compat"]
+
+[dependencies.tiberius]
+version = "0.12"
+features = ["rustls-native-certs"]
+default-features = false
+
 
 [features]
 default = ["tokio"]
 # tokio runtime
 tokio = ["ntex/tokio"]
 # compio runtime
-compio = ["ntex/compio", ]
+compio = ["ntex/compio"]

@@ -44,7 +44,7 @@ impl Metadata {
     // В качестве параметров принимает строковую переменную:
     // s - имя файла, в котором хранится кэш метаданных в формате json.
     pub fn save_to_file(&self, s: &str) -> std::io::Result<()> {
-        let b = serde_json::to_vec(self)?;
+        let b = serde_json::to_vec_pretty(self)?;
         let mut f = File::create(s)?;
         f.write_all(&b)?;
         Ok(())

@@ -3,7 +3,7 @@ use std::io::Read;
 
 use crate::init_objects::InitedObjects;
 use crate::queries::PgConnection;
-use crate::{metadata::Object, Metadata, Result};
+use crate::{Metadata, Result};
 
 pub(crate) struct AppCreater {
     pub(crate) conn: PgConnection,
@@ -26,7 +26,7 @@ impl AppCreater {
     // cs - строка подключения, описание которой можно посмотреть по ссылке https://github.com/denisenkom/go-mssqldb#connection-parameters-and-dsn;
     // s - имя файла, в котором хранится кэш метаданных в формате json.
     // Возвращает объект Metadata.
-    pub async fn load_newer(&self) -> Result<Metadata> {
+    pub async fn load_newer(&mut self) -> Result<Metadata> {
         let mut m = self
             .load_from_file()
             .unwrap_or_else(|_| Metadata::default());
@@ -53,8 +53,8 @@ impl AppCreater {
         Ok(m)
     }
 
-    pub async fn load_from_db(&self) -> Result<Metadata> {
-        let mut obj_main = InitedObjects::init_objects(&self.conn).await?;
+    pub async fn load_from_db(&mut self) -> Result<Metadata> {
+        let mut obj_main = InitedObjects::init_objects(&mut self.conn).await?;
         obj_main.types_insert();
 
         let rows = self.conn.db_data().await;
@@ -62,7 +62,6 @@ impl AppCreater {
         let mut to = String::new();
         let mut vo = String::new();
         let mut tt_cv_name = String::new();
-        let mut table_object: Option<Object> = None;
 
         for row in rows {
             let (
@@ -83,54 +82,52 @@ impl AppCreater {
             let tn = format!("{}{}{}", table_prefix, table_number, table_suffix);
             if to != tn {
                 to = tn;
-                table_object = if let Some(table_object) = obj_main.obj(
+
+                let Some(table_object) = obj_main.obj(
                     &data_type,
                     &table_number,
                     &table_name,
                     &table_prefix,
                     &table_suffix,
-                ) {
-                    tt_cv_name = table_object.cv_name.clone();
-                    obj_main
-                        .metadata
-                        .objects
-                        .insert(tt_cv_name.clone(), table_object.clone());
-
-                    match data_type.as_str() {
-                        "Enum" => obj_main.agregs_insert(&table_object, "Enum"),
-                        "BPrPoints" => obj_main.agregs_insert(&table_object, "RoutePoint"),
-                        _ => {}
-                    }
-                    obj_main.rtref_insert(&table_object);
-
-                    Some(table_object)
-                } else {
+                ) else {
                     continue;
                 };
 
-                vo.clear();
+                tt_cv_name = table_object.cv_name.clone();
+
+                match data_type.as_str() {
+                    "Enum" => obj_main.agregs_insert(&table_object, "Enum"),
+                    "BPrPoints" => obj_main.agregs_insert(&table_object, "RoutePoint"),
+                    _ => {}
+                }
+                obj_main.rtref_insert(&table_object);
+
+                obj_main
+                    .metadata
+                    .objects
+                    .insert(tt_cv_name.clone(), table_object);
             }
 
             let vn = format!("{}{}{}", vt_prefix, vt_number, vt_suffix);
-            if vo != vn {
+            if vo != vn && !vn.is_empty() {
                 vo = vn;
-                table_object = if let Some(table_object) = obj_main.obj(
+                tt_cv_name = tt_cv_name.split(&vt_prefix).collect::<Vec<&str>>()[0].to_string();
+
+                let Some(table_object) = obj_main.obj(
                     "VT",
                     &vt_number,
                     &table_name,
                     &format!("{}{}", tt_cv_name, vt_prefix),
                     &vt_suffix,
-                ) {
-                    let vt_cv_name = table_object.cv_name.clone();
-                    obj_main
-                        .metadata
-                        .objects
-                        .insert(vt_cv_name, table_object.clone());
-
-                    Some(table_object)
-                } else {
+                ) else {
                     continue;
                 };
+
+                tt_cv_name = table_object.cv_name.clone();
+                obj_main
+                    .metadata
+                    .objects
+                    .insert(tt_cv_name.clone(), table_object);
             }
 
             let Some(field_object) = obj_main.obj(
@@ -144,11 +141,14 @@ impl AppCreater {
             };
 
             let fl_cv_name = field_object.cv_name.clone();
-            table_object
-                .as_mut()
+
+            obj_main
+                .metadata
+                .objects
+                .get_mut(&tt_cv_name)
                 .unwrap()
                 .params
-                .insert(fl_cv_name, field_object.clone());
+                .insert(fl_cv_name, field_object);
         }
 
         Ok(obj_main.metadata)

@@ -172,37 +172,58 @@ impl InitedObjects {
         );
     }
 
-    pub async fn init_objects(conn: &PgConnection) -> Result<InitedObjects> {
+    pub async fn init_objects(conn: &mut PgConnection) -> Result<InitedObjects> {
         let metadata = Metadata {
             language: "ru".to_string(),
             objects: HashMap::with_capacity(65536),
             version: conn.db_version().await?,
         };
 
-        let bin = conn.db_names().await?;
-        let dbnames = processing::processing_db_names(bin.as_slice());
+        let row = conn.db_names().await;
+        let bin = row.get::<&[u8], _>(0).unwrap();
+        let bin = deflater(bin);
+        let dbnames = processing::processing_db_names(&bin);
 
-        let bin = conn.cv_names().await?;
-        let cvnames = processing::processing_cv_names(bin.as_slice());
+        let row = conn.cv_names().await;
+        let bin = row.get::<&[u8], _>(0).unwrap();
+        let bin = deflater(bin);
+        let cvnames = processing::processing_cv_names(&bin);
 
         let mut enums = HashMap::with_capacity(dbnames.cnt_enums);
-        let stmt = conn.cl.prepare(&dbnames.qry_enums).await.unwrap();
-        let rows = conn.cl.query(&stmt, &[]).await.unwrap();
-        for row in rows {
-            let k = row.get::<_, String>(0);
-            let v = row.get::<_, &[u8]>(1);
-            let v = processing::processing_enums(v);
-            enums.insert(k, v);
+
+        let rows = conn.cl.query(&dbnames.qry_enums, &[]).await.unwrap();
+        for row in rows.into_first_result().await.unwrap() {
+            let Some(k) = row.get::<'_, &str, _>(0) else {
+                continue;
+            };
+            let Some(v) = row.get::<'_, &[u8], _>(1) else {
+                continue;
+            };
+            let v = deflater(v);
+            let v = processing::processing_enums(&v);
+            enums.insert(k.to_string(), v);
         }
 
         let mut points = HashMap::with_capacity(dbnames.cnt_points);
-        let stmt = conn.cl.prepare(&dbnames.qry_points).await.unwrap();
-        let rows = conn.cl.query(&stmt, &[]).await.unwrap();
+
+        let rows = conn
+            .cl
+            .query(&dbnames.qry_points, &[])
+            .await
+            .unwrap()
+            .into_first_result()
+            .await
+            .unwrap();
         for row in rows {
-            let k = row.get::<_, String>(0);
-            let v = row.get::<_, &[u8]>(1);
-            let v = processing::processing_points(v);
-            points.insert(k, v);
+            let Some(k) = row.get::<&str, _>(0) else {
+                continue;
+            };
+            let Some(v) = row.get::<&[u8], _>(1) else {
+                continue;
+            };
+            let v = deflater(v);
+            let v = processing::processing_points(&v);
+            points.insert(k.to_string(), v);
         }
 
         let obj = InitedObjects {
@@ -220,7 +241,10 @@ impl InitedObjects {
 }
 
 fn field_synonyms(field: &str) -> HashMap<String, String> {
-    let x = crate::consts::FIELD_SYNONYMS.get(field).unwrap();
+    let x = match crate::consts::FIELD_SYNONYMS.get(field) {
+        Some(x) => x,
+        None => &HashMap::<&str, &str>::new(),
+    };
     let z = x.iter().map(|(k, v)| (k.to_string(), v.to_string()));
 
     let h = HashMap::from_iter(z);
@@ -237,4 +261,14 @@ fn fields(language: &str) -> Box<HashMap<&'static str, &'static str>> {
     let x = crate::consts::FIELDS.get(language).unwrap();
     let y = x.to_owned();
     Box::new(y)
+}
+
+pub fn deflater(bin: &[u8]) -> Vec<u8> {
+    use flate2::read::DeflateDecoder;
+    use std::io::Read;
+    let mut deflater = DeflateDecoder::new(bin);
+    let mut decompressed = Vec::new();
+    deflater.read_to_end(&mut decompressed).unwrap();
+
+    decompressed
 }
