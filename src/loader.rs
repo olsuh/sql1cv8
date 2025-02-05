@@ -77,7 +77,7 @@ impl Conf1SLoader {
                 field_prefix,
                 field_number,
                 field_suffix,
-            ) = row?;
+            ) = row;
 
             let tn = format!("{}{}{}", table_prefix, table_number, table_suffix);
             if to != tn {

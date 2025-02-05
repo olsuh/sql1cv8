@@ -1,11 +1,11 @@
-use std::error::Error;
 use std::env;
+use std::error::Error;
 pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
 pub(crate) type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 mod consts;
-mod loader;
 mod init_objects;
+mod loader;
 mod metadata;
 mod parser;
 mod processing;

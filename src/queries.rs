@@ -78,38 +78,36 @@ impl SQLConnection {
 
     pub async fn db_data(
         &mut self,
-    ) -> Vec<
-        Result<(
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-            String,
-        )>,
-    > {
+    ) -> Vec<(
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    )> {
         let rows = self.fetch_rows(self.db_data, &[]).await;
         let rows = Vec::from_iter(rows.iter().map(|row| {
-            Ok((
-                row.get_by_position::<String>(0)?,
-                row.get_by_position::<String>(1)?,
-                row.get_by_position::<String>(2)?,
-                row.get_by_position::<String>(3)?,
-                row.get_by_position::<String>(4)?,
-                row.get_by_position::<String>(5)?,
-                row.get_by_position::<String>(6)?,
-                row.get_by_position::<String>(7)?,
-                row.get_by_position::<String>(8)?,
-                row.get_by_position::<String>(9)?,
-                row.get_by_position::<String>(10)?,
-                row.get_by_position::<String>(11)?,
-            ))
+            (
+                row.get_by_position::<String>(0).expect("db_data row[0]"),
+                row.get_by_position::<String>(1).expect("db_data row[1]"),
+                row.get_by_position::<String>(2).expect("db_data row[2]"),
+                row.get_by_position::<String>(3).expect("db_data row[3]"),
+                row.get_by_position::<String>(4).expect("db_data row[4]"),
+                row.get_by_position::<String>(5).expect("db_data row[5]"),
+                row.get_by_position::<String>(6).expect("db_data row[6]"),
+                row.get_by_position::<String>(7).expect("db_data row[7]"),
+                row.get_by_position::<String>(8).expect("db_data row[8]"),
+                row.get_by_position::<String>(9).expect("db_data row[9]"),
+                row.get_by_position::<String>(10).expect("db_data row[10]"),
+                row.get_by_position::<String>(11).expect("db_data row[11]"),
+            )
         }));
         rows
     }
