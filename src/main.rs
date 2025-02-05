@@ -11,12 +11,8 @@ mod processing;
 mod queries;
 pub(crate) use metadata::Metadata;
 
-const CONNECTION_STRING: &str =
-    "jdbc:sqlserver://localhost:1434;databaseName=ut;user=sa;password=<psw>;";
-//"postgres://postgres:<psw>@127.0.0.1/ut";
 const METADATA_FILE_NAME: &str = "metadata.json";
-
-static SRC_QUERY: &str = r#"  -- /*comment/**/ [$Справочник.Номенклатура]
+const SRC_QUERY: &str = r#"  -- /*comment/**/ [$Справочник.Номенклатура]
   /* /*[$Справочник.Номенклатура]*/ /*[$Справочник.Номенклатура]*/   */SELECT items.[$Ссылка] AS item_id
       ,items.[$Код] AS item_code
       ,items.[$Наименование] AS item_descr
@@ -26,12 +22,32 @@ WHERE items.[$ПометкаУдаления] = 0
 
 #[ntex::main]
 async fn main() -> Result<()> {
-    let mut creater = creater::AppCreater::create(CONNECTION_STRING, METADATA_FILE_NAME).await;
+    let password = "<psw>>";
+    //let ms_connection_string = &format!("jdbc:sqlserver://localhost:1434;databaseName=ut;user=sa;password={password};");
+    //let db_url = &format!("server=127.0.0.1,1434;databaseName=ut;user=sa;password={password};TrustServerCertificate=true;");
+    //test(db_url, METADATA_FILE_NAME).await?;
+    let db_url = &format!("postgres://postgres:{password}@127.0.0.1/ut"); //5432
+    test(db_url, METADATA_FILE_NAME).await?;
+
+    test_with_create_load_file(db_url, METADATA_FILE_NAME, SRC_QUERY).await?;
+    Ok(())
+}
+
+async fn test(db_url: &str, file: &str) -> Result<()> {
+    let mut creater = creater::AppCreater::ini(db_url, file).await;
+
+    let m = creater.load_from_db().await?;
+    let qry = m.parse(SRC_QUERY)?;
+    println!("Результат:\n{}", qry);
+    Ok(())
+}
+
+async fn test_with_create_load_file(db_url: &str, file: &str, query: &str) -> Result<()> {
+    let mut creater = creater::AppCreater::ini(db_url, file).await;
     let m = creater.load_newer().await?;
     println!("Версия метаданных: {}", m.version);
 
-    let qry = m.parse(SRC_QUERY)?;
+    let qry = m.parse(query)?;
     println!("Результат:\n{}", qry);
-
     Ok(())
 }

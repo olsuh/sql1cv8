@@ -1,11 +1,11 @@
 use crate::HashMap;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct CVNames {
     pub(crate) m: HashMap<String, CVName>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct CVName {
     pub(crate) val: String,
     pub(crate) syn: HashMap<String, String>,
@@ -60,7 +60,7 @@ pub(crate) fn processing_cv_names(bin: &[u8]) -> CVNames {
 }
 
 pub(crate) type Enums = Vec<Enum>;
-
+#[derive(Debug)]
 pub(crate) struct Enum {
     pub(crate) num: String,
     pub(crate) val: String,
@@ -134,7 +134,7 @@ pub(crate) struct DBName {
     pub(crate) num: String,
 }
 
-pub(crate) fn processing_db_names(bin: &[u8]) -> DBNames {
+pub(crate) fn processing_db_names(bin: &[u8], is_pg_sql: bool) -> DBNames {
     let mut d = DBNames {
         m: HashMap::with_capacity(65536),
         ..DBNames::default()
@@ -163,7 +163,7 @@ pub(crate) fn processing_db_names(bin: &[u8]) -> DBNames {
                         DBName {
                             ids: ids.clone(),
                             typ: typ.clone(),
-                            num: num.clone(),
+                            num: num,
                         },
                     );
 
@@ -186,20 +186,23 @@ pub(crate) fn processing_db_names(bin: &[u8]) -> DBNames {
 
     if !qe.is_empty() {
         d.cnt_enums = ce;
-        d.qry_enums = format!(
-            "select FileName, BinaryData from Config where FileName in ({})",
-            &qe[1..]
-        );
+        d.qry_enums = qry_config(&qe, is_pg_sql);
     }
     if !qp.is_empty() {
         d.cnt_points = cp;
-        d.qry_points = format!(
-            "select left(FileName, 36) FileName, BinaryData from Config where FileName in ({})",
-            &qp[1..]
-        );
+        d.qry_points = qry_config(&qp, is_pg_sql); //left(FileName, 36)
     }
 
     d
+}
+
+fn qry_config(ids: &str, is_pg_sql: bool) -> String {
+    let ids = if ids.starts_with(',') { &ids[1..] } else { ids };
+    if is_pg_sql {
+        format!("select CAST(FileName as text) FileName, BinaryData from Config where FileName in ({ids})")
+    } else {
+        format!("select FileName, BinaryData from Config where FileName in ({ids})")
+    }
 }
 
 struct ProcessingData<'a> {

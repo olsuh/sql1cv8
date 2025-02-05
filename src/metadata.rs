@@ -6,7 +6,7 @@ use std::io::Write;
 //use serde_json::{Serializer, Deserializer};
 
 // Объект метаданных
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub(crate) struct Object {
     pub(crate) uuid: String,                      // Идентификатор
     pub(crate) r#type: String,                    // Тип объекта

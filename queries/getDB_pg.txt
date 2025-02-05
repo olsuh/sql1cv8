@@ -1,0 +1,19 @@
+WITH cte_t AS (
+	SELECT
+	c.relname as TableName
+	,a.attname as FieldName
+	,pg_catalog.format_type(a.atttypid, a.atttypmod) as FieldType
+	--,a.attnum
+	
+	FROM pg_catalog.pg_attribute a
+	   JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+		 JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+	
+	WHERE
+		a.attnum > 0
+		AND NOT a.attisdropped
+		AND n.nspname = 'public'
+		AND c.relkind <> 'i'
+		AND c.relname !~* 'chngr'
+	)
+SELECT * FROM cte_t;

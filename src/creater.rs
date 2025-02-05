@@ -2,17 +2,17 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::init_objects::InitedObjects;
-use crate::queries::PgConnection;
+use crate::queries::SQLConnection;
 use crate::{Metadata, Result};
 
 pub(crate) struct AppCreater {
-    pub(crate) conn: PgConnection,
+    pub(crate) conn: SQLConnection,
     file: String,
 }
 
 impl AppCreater {
-    pub async fn create(db_url: &str, file: &str) -> Self {
-        let conn = PgConnection::connect(db_url).await;
+    pub async fn ini(db_url: &str, file: &str) -> Self {
+        let conn = SQLConnection::connect(db_url).await;
         Self {
             conn,
             file: file.into(),

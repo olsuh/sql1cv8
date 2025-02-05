@@ -1,5 +1,4 @@
-// Импорт необходимых библиотек
-use crate::{processing, queries::PgConnection, HashMap};
+use crate::{processing, queries::SQLConnection, HashMap};
 use std::ops::Deref;
 
 use crate::{
@@ -8,7 +7,6 @@ use crate::{
     Metadata, Result,
 };
 
-// Структура initedObjects
 pub(crate) struct InitedObjects {
     pub(crate) metadata: Metadata,
     fields: Box<HashMap<&'static str, &'static str>>,
@@ -172,58 +170,52 @@ impl InitedObjects {
         );
     }
 
-    pub async fn init_objects(conn: &mut PgConnection) -> Result<InitedObjects> {
+    pub async fn init_objects(conn: &mut SQLConnection) -> Result<InitedObjects> {
         let metadata = Metadata {
             language: "ru".to_string(),
             objects: HashMap::with_capacity(65536),
             version: conn.db_version().await?,
         };
 
-        let row = conn.db_names().await;
-        let bin = row.get::<&[u8], _>(0).unwrap();
-        let bin = deflater(bin);
-        let dbnames = processing::processing_db_names(&bin);
+        let row = conn.db_names().await.pop().unwrap();
+        let bin = row.get_by_position::<Vec<u8>>(0).unwrap();
+        let bin = deflater(bin.as_ref());
+        let dbnames = processing::processing_db_names(&bin, conn.is_pg_sql);
 
-        let row = conn.cv_names().await;
-        let bin = row.get::<&[u8], _>(0).unwrap();
-        let bin = deflater(bin);
+        let row = conn.cv_names().await.pop().unwrap();
+        let bin = row.get_by_position::<Vec<u8>>(0).unwrap();
+        let bin = deflater(bin.as_ref());
         let cvnames = processing::processing_cv_names(&bin);
 
         let mut enums = HashMap::with_capacity(dbnames.cnt_enums);
 
-        let rows = conn.cl.query(&dbnames.qry_enums, &[]).await.unwrap();
-        for row in rows.into_first_result().await.unwrap() {
-            let Some(k) = row.get::<'_, &str, _>(0) else {
+        let rows = conn.fetch_rows(&dbnames.qry_enums, &[]).await;
+        for row in rows {
+            let Ok(k) = row.get_by_position::<String>(0) else {
                 continue;
             };
-            let Some(v) = row.get::<'_, &[u8], _>(1) else {
+            let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
                 continue;
             };
-            let v = deflater(v);
+            let v = deflater(v.as_ref());
             let v = processing::processing_enums(&v);
-            enums.insert(k.to_string(), v);
+            enums.insert(k, v);
         }
 
         let mut points = HashMap::with_capacity(dbnames.cnt_points);
 
-        let rows = conn
-            .cl
-            .query(&dbnames.qry_points, &[])
-            .await
-            .unwrap()
-            .into_first_result()
-            .await
-            .unwrap();
+        let rows = conn.fetch_rows(&dbnames.qry_points, &[]).await;
         for row in rows {
-            let Some(k) = row.get::<&str, _>(0) else {
+            let Ok(k) = row.get_by_position::<String>(0) else {
                 continue;
             };
-            let Some(v) = row.get::<&[u8], _>(1) else {
+            let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
                 continue;
             };
-            let v = deflater(v);
+            let v = deflater(v.as_ref());
             let v = processing::processing_points(&v);
-            points.insert(k.to_string(), v);
+            let k = k[..36].to_string();
+            points.insert(k, v);
         }
 
         let obj = InitedObjects {
