@@ -4,7 +4,7 @@ pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
 pub(crate) type HashMap<K, V> = std::collections::HashMap<K, V>;
 
 mod consts;
-mod creater;
+mod loader;
 mod init_objects;
 mod metadata;
 mod parser;
@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
 }
 
 async fn test(db_url: &str, file: &str) -> Result<()> {
-    let mut creater = creater::AppCreater::ini(db_url, file).await;
+    let mut creater = loader::Conf1SLoader::ini(db_url, file).await;
 
     let m = creater.load_from_db().await?;
     let qry = m.parse(SRC_QUERY)?;
@@ -44,7 +44,7 @@ async fn test(db_url: &str, file: &str) -> Result<()> {
 }
 
 async fn test_with_create_load_file(db_url: &str, file: &str, query: &str) -> Result<()> {
-    let mut creater = creater::AppCreater::ini(db_url, file).await;
+    let mut creater = loader::Conf1SLoader::ini(db_url, file).await;
     let m = creater.load_newer().await?;
     println!("Версия метаданных: {}", m.version);
 

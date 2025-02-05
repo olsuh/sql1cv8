@@ -97,18 +97,18 @@ impl SQLConnection {
         let rows = self.fetch_rows(self.db_data, &[]).await;
         let rows = Vec::from_iter(rows.iter().map(|row| {
             Ok((
-                row.get_by_position::<String>(0).unwrap(),
-                row.get_by_position::<String>(1).unwrap(),
-                row.get_by_position::<String>(2).unwrap(),
-                row.get_by_position::<String>(3).unwrap(),
-                row.get_by_position::<String>(4).unwrap(),
-                row.get_by_position::<String>(5).unwrap(),
-                row.get_by_position::<String>(6).unwrap(),
-                row.get_by_position::<String>(7).unwrap(),
-                row.get_by_position::<String>(8).unwrap(),
-                row.get_by_position::<String>(9).unwrap(),
-                row.get_by_position::<String>(10).unwrap(),
-                row.get_by_position::<String>(11).unwrap(),
+                row.get_by_position::<String>(0)?,
+                row.get_by_position::<String>(1)?,
+                row.get_by_position::<String>(2)?,
+                row.get_by_position::<String>(3)?,
+                row.get_by_position::<String>(4)?,
+                row.get_by_position::<String>(5)?,
+                row.get_by_position::<String>(6)?,
+                row.get_by_position::<String>(7)?,
+                row.get_by_position::<String>(8)?,
+                row.get_by_position::<String>(9)?,
+                row.get_by_position::<String>(10)?,
+                row.get_by_position::<String>(11)?,
             ))
         }));
         rows

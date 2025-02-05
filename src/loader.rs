@@ -5,12 +5,12 @@ use crate::init_objects::InitedObjects;
 use crate::queries::SQLConnection;
 use crate::{Metadata, Result};
 
-pub(crate) struct AppCreater {
+pub(crate) struct Conf1SLoader {
     pub(crate) conn: SQLConnection,
     file: String,
 }
 
-impl AppCreater {
+impl Conf1SLoader {
     pub async fn ini(db_url: &str, file: &str) -> Self {
         let conn = SQLConnection::connect(db_url).await;
         Self {
