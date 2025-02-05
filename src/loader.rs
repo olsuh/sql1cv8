@@ -96,8 +96,8 @@ impl MetaDataLoader {
                 tt_cv_name = table_object.cv_name.clone();
 
                 match data_type.as_str() {
-                    "Enum" => obj_main.agregs_insert(&table_object, "Enum"),
-                    "BPrPoints" => obj_main.agregs_insert(&table_object, "RoutePoint"),
+                    "Enum" => obj_main.agregs_insert(&table_object, "Enum", self.conn.is_pg_sql),
+                    "BPrPoints" => obj_main.agregs_insert(&table_object, "RoutePoint", self.conn.is_pg_sql),
                     _ => {}
                 }
                 obj_main.rtref_insert(&table_object);

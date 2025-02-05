@@ -12,7 +12,7 @@ pub(crate) struct InitedObjects {
     fields: Box<HashMap<&'static str, &'static str>>,
     types: Box<HashMap<&'static str, &'static str>>,
     dbnames: DBNames,
-    pub(crate) cvnames: CVNames,
+    cvnames: CVNames,
     enums: HashMap<String, Enums>,
     points: HashMap<String, Points>,
 }
@@ -53,7 +53,7 @@ impl InitedObjects {
         })
     }
 
-    pub(crate) fn agregs_insert(&mut self, o: &Object, agreg: &str) {
+    pub(crate) fn agregs_insert(&mut self, o: &Object, agreg: &str, is_pg_sql: bool) {
         let mut qc = String::new();
         let mut qd = String::new();
 
@@ -83,12 +83,13 @@ impl InitedObjects {
             ));
 
             let dollar_name = format!("${}", name);
+            let cast_top = if is_pg_sql {""} else {"top 1"};
             self.metadata.objects.insert(
                 dollar_name.clone(),
                 Object {
                     r#type: agreg.to_string() + "RRef",
                     db_name: format!(
-                        "(select top 1 _IDRRef from {} where _{agreg}Order = {})",
+                        "(select {cast_top} _IDRRef from {} where _{agreg}Order = {})",
                         o.db_name, e.num
                     ),
                     cv_name: dollar_name,
