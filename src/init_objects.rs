@@ -27,7 +27,7 @@ impl InitedObjects {
         d_suffix: &str,
     ) -> Option<Object> {
         if d_type == "Fld" {
-            if let Some(name) = self.fields.get(d_number) {
+            if let Some(name) = self.fields.get(d_number) { // стандатрные поля
                 return Some(Object {
                     r#type: d_number[1..].to_string(),
                     number: d_number.to_string(),
@@ -83,13 +83,13 @@ impl InitedObjects {
             ));
 
             let dollar_name = format!("${}", name);
-            let cast_top = if is_pg_sql {""} else {"top 1"};
+            let cast_top = if is_pg_sql { "" } else { "top 1 " };
             self.metadata.objects.insert(
                 dollar_name.clone(),
                 Object {
                     r#type: agreg.to_string() + "RRef",
                     db_name: format!(
-                        "(select {cast_top} _IDRRef from {} where _{agreg}Order = {})",
+                        "(select {cast_top}_IDRRef from {} where _{agreg}Order = {})",
                         o.db_name, e.num
                     ),
                     cv_name: dollar_name,

@@ -97,7 +97,9 @@ impl MetaDataLoader {
 
                 match data_type.as_str() {
                     "Enum" => obj_main.agregs_insert(&table_object, "Enum", self.conn.is_pg_sql),
-                    "BPrPoints" => obj_main.agregs_insert(&table_object, "RoutePoint", self.conn.is_pg_sql),
+                    "BPrPoints" => {
+                        obj_main.agregs_insert(&table_object, "RoutePoint", self.conn.is_pg_sql)
+                    }
                     _ => {}
                 }
                 obj_main.rtref_insert(&table_object);
@@ -142,13 +144,26 @@ impl MetaDataLoader {
 
             let fl_cv_name = field_object.cv_name.clone();
 
-            obj_main
+            let params = &mut obj_main
                 .metadata
                 .objects
                 .get_mut(&tt_cv_name)
                 .unwrap()
-                .params
-                .insert(fl_cv_name, field_object);
+                .params;
+
+            match params.get(&fl_cv_name) {
+                Some(old_obj) => {
+                    println!("{old_obj:?} - дубль - {field_object:?}");
+                    if old_obj.uuid.is_empty() {
+                        println!(" - первый перетираем");
+                        params.insert(fl_cv_name, field_object);
+                    } else {
+                        println!(" - первый оставляем");
+                    }
+                },
+                None => {params.insert(fl_cv_name, field_object);},
+            };
+                    
         }
 
         Ok(obj_main.metadata)
