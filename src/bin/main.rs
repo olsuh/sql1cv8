@@ -1,17 +1,5 @@
+use sql1cv8::*;
 use std::env;
-use std::error::Error;
-pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
-pub(crate) type HashMap<K, V> = std::collections::HashMap<K, V>;
-
-mod consts;
-mod init_objects;
-mod loader;
-mod metadata;
-mod parser;
-mod processing;
-mod queries;
-pub(crate) use metadata::Metadata;
-use metadata::Object;
 
 const SRC_QUERY: &str = r#"  -- /*comment/**/ [$Справочник.Номенклатура]
   /* /*[$Справочник.Номенклатура]*/ /*[$Справочник.Номенклатура]*/   */SELECT items.[$Ссылка] AS item_id
@@ -23,9 +11,9 @@ WHERE items.[$ПометкаУдаления] = 0
 
 #[ntex::main]
 async fn main() -> Result<()> {
-    let file_name1= "metadata_1.json";
-    let file_name2= "metadata_2.json";
-    
+    let file_name1 = "metadata_1.json";
+    let file_name2 = "metadata_2.json";
+
     let _x = std::fs::remove_file(file_name1);
     let _x = std::fs::remove_file(file_name2);
 
@@ -38,7 +26,7 @@ async fn main() -> Result<()> {
 
     qry1 = qry1.to_lowercase();
     qry2 = qry2.to_lowercase();
-    assert_eq!(qry1,qry2);
+    assert_eq!(qry1, qry2);
 
     conpare_two_files(file_name1, file_name2).await;
     conpare_two_files(file_name2, file_name1).await;
@@ -75,11 +63,9 @@ async fn conpare_two_files(file1: &str, file2: &str) {
         let obj2 = m2.objects.get(k).unwrap();
         compare_two_obj(obj1, obj2, k);
     }
-
 }
 
 fn compare_two_obj(obj1: &Object, obj2: &Object, k: &str) {
-
     let key = k.to_owned();
 
     for (k, v1) in obj1.synonyms.iter() {
@@ -88,17 +74,15 @@ fn compare_two_obj(obj1: &Object, obj2: &Object, k: &str) {
                 if v1 != v2 {
                     println!("{} - syn {} != {}", obj1.cv_name, v1, v2)
                 }
-            },
+            }
             None => {
                 println!("{} {} - syn {} - не нашли ", key, obj1.cv_name, v1)
-            },
+            }
         };
     }
 
     for (k, param1) in obj1.params.iter() {
         let param2 = obj2.params.get(k).unwrap();
-        compare_two_obj(param1, param2, &(key.clone() + "\\"+ &k) );
+        compare_two_obj(param1, param2, &(key.clone() + "\\" + &k));
     }
-
-
 }
