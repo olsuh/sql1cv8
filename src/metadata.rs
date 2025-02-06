@@ -7,14 +7,14 @@ use std::io::Write;
 
 // Объект метаданных
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
-pub(crate) struct Object {
-    pub(crate) uuid: String,                      // Идентификатор
-    pub(crate) r#type: String,                    // Тип объекта
-    pub(crate) number: String,                    // Номер объекта DBNames
-    pub(crate) db_name: String,                   // Имя в базе данных
-    pub(crate) cv_name: String,                   // Имя в конфигурации
-    pub(crate) synonyms: HashMap<String, String>, // Синонимы объекта
-    pub(crate) params: HashMap<String, Object>,   // Параметры объекта
+pub struct Object {
+    pub uuid: String,                      // Идентификатор
+    pub r#type: String,                    // Тип объекта
+    pub number: String,                    // Номер объекта DBNames
+    pub db_name: String,                   // Имя в базе данных
+    pub cv_name: String,                   // Имя в конфигурации
+    pub synonyms: HashMap<String, String>, // Синонимы объекта
+    pub params: HashMap<String, Object>,   // Параметры объекта
 }
 
 impl Object {
@@ -33,10 +33,10 @@ impl Object {
 
 // Метаданные
 #[derive(Serialize, Deserialize, Default)]
-pub(crate) struct Metadata {
-    pub(crate) version: String,                  // Версия метаданных
-    pub(crate) language: String,                 // Язык конфигурации
-    pub(crate) objects: HashMap<String, Object>, // Объекты метаданных первого уровня. Это либо таблицы, либо какие-то констаты вроде типов полей для составных типов, значения перечислений и виды ссылок
+pub struct Metadata {
+    pub version: String,                  // Версия метаданных
+    pub language: String,                 // Язык конфигурации
+    pub objects: HashMap<String, Object>, // Объекты метаданных первого уровня. Это либо таблицы, либо какие-то констаты вроде типов полей для составных типов, значения перечислений и виды ссылок
 }
 
 impl Metadata {

@@ -27,7 +27,8 @@ impl InitedObjects {
         d_suffix: &str,
     ) -> Option<Object> {
         if d_type == "Fld" {
-            if let Some(name) = self.fields.get(d_number) { // стандатрные поля
+            // стандатрные поля
+            if let Some(name) = self.fields.get(d_number) {
                 return Some(Object {
                     r#type: d_number[1..].to_string(),
                     number: d_number.to_string(),

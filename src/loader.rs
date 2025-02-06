@@ -5,16 +5,15 @@ use crate::init_objects::InitedObjects;
 use crate::queries::SQLConnection;
 use crate::{Metadata, Result};
 
-pub(crate) struct MetaDataLoader {
-    pub(crate) conn: SQLConnection,
+pub struct MetaDataLoader {
+    pub conn: SQLConnection,
     file: String,
 }
 
 impl MetaDataLoader {
     pub async fn ini(db_url: &str, file: &str) -> Self {
-        let conn = SQLConnection::connect(db_url).await;
         Self {
-            conn,
+            conn: SQLConnection::connect(db_url).await,
             file: file.into(),
         }
     }
@@ -160,10 +159,11 @@ impl MetaDataLoader {
                     } else {
                         println!(" - первый оставляем");
                     }
-                },
-                None => {params.insert(fl_cv_name, field_object);},
+                }
+                None => {
+                    params.insert(fl_cv_name, field_object);
+                }
             };
-                    
         }
 
         Ok(obj_main.metadata)

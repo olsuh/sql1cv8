@@ -41,7 +41,7 @@ pub struct SQLConnection {
     db_data: &'static str,
     cv_names: &'static str,
     db_names: &'static str,
-    pub(crate) is_pg_sql: bool,
+    pub is_pg_sql: bool,
     //buf: RefCell<BytesMut>, //buf: RefCell::new(BytesMut::with_capacity(10 * 1024 * 1024)),
 }
 impl SQLConnection {
