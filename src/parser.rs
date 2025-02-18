@@ -9,7 +9,7 @@ use crate::Metadata;
 // src - текст запроса.
 // Возвращает изменённый запрос res.
 impl Metadata {
-    pub fn parse(&self, src: &str) -> Result<String, Box<dyn Error>> {
+    pub fn parse(&self, src: &str) -> Result<String, Box<dyn Error  + Send + Sync>> {
         let mut buf = Vec::new();
         let mut res = src.to_string();
 
@@ -154,7 +154,7 @@ fn parse_func_constructions(m: &Metadata, src: &str) -> String {
     res
 }
 
-fn parse_with_brackets(m: &Metadata, src: &str) -> Result<String, Box<dyn Error>> {
+fn parse_with_brackets(m: &Metadata, src: &str) -> Result<String, Box<dyn Error  + Send + Sync>> {
     let mut res = String::new();
     let mut open = 0;
     let mut inc = String::new();

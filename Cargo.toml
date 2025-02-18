@@ -1,6 +1,6 @@
 [package]
 name = "sql1cv8"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [dependencies]
@@ -18,6 +18,10 @@ flate2 = "1"
 
 welds-connections = { version = "0.4", features = [ 'mssql', 'postgres', "tokio"]  }
 welds = { version = "0.4", features = [ 'mssql', 'postgres' ]  }
+
+tracing = { version = "0.1.40" }
+tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
+
 
 #may_postgres = { git = "https://github.com/Xudong-Huang/may_postgres.git" } #, rev = "917ed78", default-features = false }
 #tokio-postgres = { git="https://github.com/fafhrd91/postgres.git", branch="ntex-2" }

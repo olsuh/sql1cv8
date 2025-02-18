@@ -5,7 +5,7 @@ use crate::{
     processing::{CVNames, DBNames, Enums, Points},
     Metadata, Result,
 };
-use sqlx_core::row::Row;
+use tracing;
 
 pub(crate) struct InitedObjects {
     pub(crate) metadata: Metadata,
@@ -25,12 +25,13 @@ impl InitedObjects {
         d_name: &str,
         d_prefix: &str,
         d_suffix: &str,
+        c_type: &str,
     ) -> Option<Object> {
         if d_type == "Fld" {
             // стандатрные поля
             if let Some(name) = self.fields.get(d_number) {
                 return Some(Object {
-                    r#type: d_number[1..].to_string(),
+                    r#type: c_type.to_string(), //d_number[1..]
                     number: d_number.to_string(),
                     db_name: d_name.to_string(),
                     cv_name: format!("{}{}{}", d_prefix, name, d_suffix),
@@ -43,9 +44,10 @@ impl InitedObjects {
         let d = self.dbnames.m.get(&format!("{}{}", d_type, d_number))?;
         let c = self.cvnames.m.get(&d.ids)?;
 
+        let r#type = if d_type == "Fld" {c_type} else {&d.typ};
         Some(Object {
             uuid: d.ids.clone(),
-            r#type: d.typ.clone(),
+            r#type: r#type.to_string(),
             number: d.num.clone(),
             db_name: d_name.to_string(),
             cv_name: format!("{}{}{}", d_prefix, c.val, d_suffix),
@@ -67,7 +69,7 @@ impl InitedObjects {
         let vec = match agregs.get(&o.uuid) {
             Some(v) => v,
             None => {
-                println!("{agreg} {} - not found", &o.uuid);
+                tracing::error!("{agreg} {} - not found", &o.uuid);
                 return;
             },
         };
@@ -201,7 +203,7 @@ impl InitedObjects {
 
         let rows = conn.fetch_rows(&dbnames.qry_enums, &[]).await;
         for row in rows {
-            if conn.is_pg_sql {
+            /*if conn.is_pg_sql {
                 let pg_row = row.as_postgres_row().unwrap();
                 let x = pg_row.try_get_raw(0).unwrap();
                 let y1 = x.as_bytes().unwrap();
@@ -217,21 +219,21 @@ impl InitedObjects {
                 continue;
             } else {
                 
-            }
+            }*/
             
-            let Ok(k) = row.get_by_position::<Vec<u8>>(0) else {
-                println!("row[0] qry_enums - error");
+            let Ok(k) = row.get_by_position::<String>(0) else {
+                tracing::error!("row[0] qry_enums - error");
                 continue;
             };
             let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
-                println!("row[1] qry_enums - error");
+                tracing::error!("row[1] qry_enums - error");
                 continue;
             };
-            let k = k.as_ref();
-            let k = String::from_utf8_lossy(k).into_owned();
+            //let k = k.as_ref();
+            //let k = String::from_utf8_lossy(k).into_owned();
             let v = deflater(v.as_ref());
             let v = processing::processing_enums(&v);
-            dbg!(&k,&v);
+            //dbg!(&k,&v);
             enums.insert(k, v);
         }
 
@@ -240,11 +242,11 @@ impl InitedObjects {
         let rows = conn.fetch_rows(&dbnames.qry_points, &[]).await;
         for row in rows {
             let Ok(k) = row.get_by_position::<String>(0) else {
-                println!("row[0] qry_points - error");
+                tracing::error!("row[0] qry_points - error");
                 continue;
             };
             let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
-                println!("row[1] qry_points - error");
+                tracing::error!("row[1] qry_points - error");
                 continue;
             };
             let v = deflater(v.as_ref());
@@ -302,7 +304,7 @@ pub fn deflater(bin: &[u8]) -> Vec<u8> {
 
 //#![feature(array_chunks)]
 
-pub fn from_utf16le(v: &[u8]) -> Result<String> {
+/*pub fn from_utf16le(v: &[u8]) -> Result<String> {
     if v.len() % 2 != 0 {
         let e = "FromUtf16Error(())".into();
         return Err(e);
@@ -310,5 +312,5 @@ pub fn from_utf16le(v: &[u8]) -> Result<String> {
 
     let v2 = unsafe{ std::slice::from_raw_parts(v.as_ptr() as *const u16, v.len()/2) };
     Ok(String::from_utf16(v2)?)
-}
+}*/
 

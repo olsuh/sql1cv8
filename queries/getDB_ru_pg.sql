@@ -28,7 +28,8 @@ select
     VTSuffix,
     FieldPrefix,
     FieldNumber,
-    FieldSuffix
+    FieldSuffix,
+    CType
     --,dense_rank() over(partition by TablePrefix, TableNumber, TableSuffix, VTPrefix, VTNumber, VTSuffix order by TableName desc) as DN
   from (
     -- Константа
@@ -57,6 +58,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end AS FieldSuffix
+          ,t.ctype
     from t
         
     where 
@@ -77,6 +79,7 @@ select
           ,''
           ,t.cname
           , ''
+          ,t.ctype
     from t
         
     where 
@@ -110,6 +113,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -145,6 +149,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -177,6 +182,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -197,6 +203,7 @@ select
           ,''
           ,t.cname
           , ''
+          ,t.ctype
     from t
         
     where 
@@ -232,6 +239,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -266,6 +274,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -301,6 +310,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -334,6 +344,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -369,6 +380,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -402,6 +414,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -437,6 +450,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -469,6 +483,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -504,6 +519,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -536,6 +552,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -569,6 +586,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -602,6 +620,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -635,6 +654,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -668,6 +688,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -701,6 +722,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -734,6 +756,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -767,6 +790,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -802,6 +826,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -836,6 +861,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -885,6 +911,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -918,6 +945,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -955,6 +983,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -998,6 +1027,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -1030,6 +1060,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -1070,6 +1101,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -1106,6 +1138,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -1142,6 +1175,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 
@@ -1176,6 +1210,7 @@ select
             when right(t.cname, 6) = '_rrref' then '.Ссылка'
             else ''
           end
+          ,t.ctype
     from t
         
     where 

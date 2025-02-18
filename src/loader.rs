@@ -76,6 +76,7 @@ impl MetaDataLoader {
                 field_prefix,
                 field_number,
                 field_suffix,
+                c_type,
             ) = row;
 
             let tn = format!("{}{}{}", table_prefix, table_number, table_suffix);
@@ -88,6 +89,7 @@ impl MetaDataLoader {
                     &table_name,
                     &table_prefix,
                     &table_suffix,
+                    "",
                 ) else {
                     continue;
                 };
@@ -120,6 +122,7 @@ impl MetaDataLoader {
                     &table_name,
                     &format!("{}{}", tt_cv_name, vt_prefix),
                     &vt_suffix,
+                    "",
                 ) else {
                     continue;
                 };
@@ -137,6 +140,7 @@ impl MetaDataLoader {
                 &field_name,
                 &field_prefix,
                 &field_suffix,
+                &c_type,
             ) else {
                 continue;
             };
