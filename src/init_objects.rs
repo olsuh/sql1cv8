@@ -1,11 +1,11 @@
 use crate::{processing, queries::SQLConnection, HashMap};
 use std::ops::Deref;
-
 use crate::{
     metadata::Object,
     processing::{CVNames, DBNames, Enums, Points},
     Metadata, Result,
 };
+use sqlx_core::row::Row;
 
 pub(crate) struct InitedObjects {
     pub(crate) metadata: Metadata,
@@ -64,7 +64,15 @@ impl InitedObjects {
             _ => unreachable!(),
         };
 
-        for e in &agregs[&o.uuid] {
+        let vec = match agregs.get(&o.uuid) {
+            Some(v) => v,
+            None => {
+                println!("{agreg} {} - not found", &o.uuid);
+                return;
+            },
+        };
+
+        for e in vec {
             let name = format!("{}.{}", o.cv_name, e.val);
             self.metadata.objects.insert(
                 name.clone(),
@@ -171,7 +179,7 @@ impl InitedObjects {
             },
         );
     }
-
+    
     pub async fn init_objects(conn: &mut SQLConnection) -> Result<InitedObjects> {
         let metadata = Metadata {
             language: "ru".to_string(),
@@ -193,14 +201,37 @@ impl InitedObjects {
 
         let rows = conn.fetch_rows(&dbnames.qry_enums, &[]).await;
         for row in rows {
-            let Ok(k) = row.get_by_position::<String>(0) else {
+            if conn.is_pg_sql {
+                let pg_row = row.as_postgres_row().unwrap();
+                let x = pg_row.try_get_raw(0).unwrap();
+                let y1 = x.as_bytes().unwrap();
+                let s = String::from_utf8(y1.to_vec()).unwrap();
+                dbg!(&s);
+                let s2 = s.replace("\0", "");
+                dbg!(&s2);
+                let y2 = from_utf16le(y1).unwrap();
+                dbg!(&y2);
+                assert_eq!(s2,y2);
+
+                //dbg!(&pg_row);
+                continue;
+            } else {
+                
+            }
+            
+            let Ok(k) = row.get_by_position::<Vec<u8>>(0) else {
+                println!("row[0] qry_enums - error");
                 continue;
             };
             let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
+                println!("row[1] qry_enums - error");
                 continue;
             };
+            let k = k.as_ref();
+            let k = String::from_utf8_lossy(k).into_owned();
             let v = deflater(v.as_ref());
             let v = processing::processing_enums(&v);
+            dbg!(&k,&v);
             enums.insert(k, v);
         }
 
@@ -209,9 +240,11 @@ impl InitedObjects {
         let rows = conn.fetch_rows(&dbnames.qry_points, &[]).await;
         for row in rows {
             let Ok(k) = row.get_by_position::<String>(0) else {
+                println!("row[0] qry_points - error");
                 continue;
             };
             let Ok(v) = row.get_by_position::<Vec<u8>>(1) else {
+                println!("row[1] qry_points - error");
                 continue;
             };
             let v = deflater(v.as_ref());
@@ -266,3 +299,16 @@ pub fn deflater(bin: &[u8]) -> Vec<u8> {
 
     decompressed
 }
+
+//#![feature(array_chunks)]
+
+pub fn from_utf16le(v: &[u8]) -> Result<String> {
+    if v.len() % 2 != 0 {
+        let e = "FromUtf16Error(())".into();
+        return Err(e);
+    }
+
+    let v2 = unsafe{ std::slice::from_raw_parts(v.as_ptr() as *const u16, v.len()/2) };
+    Ok(String::from_utf16(v2)?)
+}
+

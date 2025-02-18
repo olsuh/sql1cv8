@@ -4,9 +4,18 @@ use std::env;
 const SRC_QUERY: &str = r#"  -- /*comment/**/ [$Справочник.Номенклатура]
   /* /*[$Справочник.Номенклатура]*/ /*[$Справочник.Номенклатура]*/   */SELECT items.[$Ссылка] AS item_id
       ,items.[$Код] AS item_code
+      ,[$Справочник.Номенклатура.$Наименование]
+      ,[$Справочник.Номенклатура.Наименование]
+      ,[Справочник.Номенклатура.$Наименование]
+      ,[Справочник.Номенклатура.Наименование]
+      ,[Справочник.Номенклатура].[Наименование]
+      ,[$Справочник.Номенклатура].[$Наименование]
+      ,$Справочник.Номенклатура.$Наименование
+      ,[$Наименование]
+      ,_reference31.[$Наименование]
       ,items.[$Наименование] AS item_descr
 FROM [$Справочник.Номенклатура] AS items
-WHERE items.[$ПометкаУдаления] = 0
+WHERE NOT items.[$ПометкаУдаления]
 "#;
 
 #[ntex::main]
@@ -16,13 +25,12 @@ async fn main() -> Result<()> {
 
     let _x = std::fs::remove_file(file_name1);
     let _x = std::fs::remove_file(file_name2);
-
-    let password = env::var("DB_PSW").expect("Переменная среды DB_PSW");
+    let password = env::var("DB_PSW").expect("Var env DB_PSW");
     //let db_url = &format!("jdbc:sqlserver://localhost:1434;databaseName=ut;user=sa;password={password};");
     let db_url1 = &format!("server=127.0.0.1,1434;databaseName=ut;user=sa;password={password};TrustServerCertificate=true;");
     let db_url2 = &format!("postgres://postgres:{password}@127.0.0.1/ut"); //5432
-    let mut qry1 = test_with_create_load_file(db_url1, file_name1, SRC_QUERY).await?;
     let mut qry2 = test_with_create_load_file(db_url2, file_name2, SRC_QUERY).await?;
+    let mut qry1 = test_with_create_load_file(db_url1, file_name1, SRC_QUERY).await?;
 
     qry1 = qry1.to_lowercase();
     qry2 = qry2.to_lowercase();
@@ -60,7 +68,10 @@ async fn conpare_two_files(file1: &str, file2: &str) {
     let m2 = l2.load_from_file().unwrap();
 
     for (k, obj1) in m1.objects.iter() {
-        let obj2 = m2.objects.get(k).unwrap();
+        let Some(obj2) = m2.objects.get(k) else {
+            println!("{k} - не нашли obj2 в {file2}");
+            continue;
+        };
         compare_two_obj(obj1, obj2, k);
     }
 }
@@ -82,7 +93,10 @@ fn compare_two_obj(obj1: &Object, obj2: &Object, k: &str) {
     }
 
     for (k, param1) in obj1.params.iter() {
-        let param2 = obj2.params.get(k).unwrap();
+        let Some(param2) = obj2.params.get(k)else {
+            println!("{k} - не нашли param2 в {obj2:?}");
+            continue;
+        };
         compare_two_obj(param1, param2, &(key.clone() + "\\" + &k));
     }
 }

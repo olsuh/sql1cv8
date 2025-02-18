@@ -1,3 +1,6 @@
 /target
 metadata*.json
 !Cargo.lock
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/settings.json

@@ -11,11 +11,11 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=sql1cv8",
+                    "--bin=main",
                     "--package=sql1cv8"
                 ],
                 "filter": {
-                    "name": "sql1cv8",
+                    "name": "main",
                     "kind": "bin"
                 }
             },
