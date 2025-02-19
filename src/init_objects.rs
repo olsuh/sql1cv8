@@ -41,8 +41,15 @@ impl InitedObjects {
             }
         }
 
-        let d = self.dbnames.m.get(&format!("{}{}", d_type, d_number))?;
-        let c = self.cvnames.m.get(&d.ids)?;
+        let key = format!("{}{}", d_type, d_number);
+        let Some(d) = self.dbnames.m.get(&key) else {
+            tracing::error!("dbnames.m.get(&key) - не нашли {}", key);
+            return None;
+        };
+        let Some(c) = self.cvnames.m.get(&d.ids) else {
+            tracing::error!("cvnames.m.get(&d.ids) - не нашли {}", d.ids);
+            return None;
+        };
 
         let r#type = if d_type == "Fld" {c_type} else {&d.typ};
         Some(Object {

@@ -157,13 +157,14 @@ impl MetaDataLoader {
             match params.get(&fl_cv_name) {
                 Some(old_obj) => {
                     // "Версия" _version стандартный перетирается "Версия" _fld5669 пользовательским (имеет uuid)
-                    println!("{old_obj:?} - дубль - {field_object:?}");
+                    let mut err = format!("{old_obj:?} - дубль - {field_object:?}");
                     if old_obj.uuid.is_empty() {
-                        println!(" - первый перетираем");
+                        err += " - первый перетираем";
                         params.insert(fl_cv_name, field_object);
                     } else {
-                        println!(" - первый оставляем");
+                        err += " - первый оставляем";
                     }
+                    tracing::error!(err);
                 }
                 None => {
                     params.insert(fl_cv_name, field_object);

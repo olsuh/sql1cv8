@@ -93,6 +93,7 @@ impl SQLConnection {
         String,
         String,
     )> {
+        let type_index = if self.is_pg_sql {12} else {10};
         let rows = self.fetch_rows(self.db_data, &[]).await;
         let rows = Vec::from_iter(rows.iter().map(|row| {
             (
@@ -108,7 +109,7 @@ impl SQLConnection {
                 row.get_by_position::<String>(9).expect("db_data row[9]"),
                 row.get_by_position::<String>(10).expect("db_data row[10]"),
                 row.get_by_position::<String>(11).expect("db_data row[11]"),
-                row.get_by_position::<String>(12).expect("db_data row[12]"),
+                row.get_by_position::<String>(type_index).expect("db_data row[12]"),
             )
         }));
         rows
